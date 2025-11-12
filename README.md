@@ -50,11 +50,26 @@ npm run dev
 4. Нажмите "Построить маршрут"
 5. Маршрут будет построен с учетом всех запретных зон
 
-## Развертывание в Telegram
+## Развертывание
+
+### GitHub Pages (автоматический деплой)
+
+1. Перейдите в Settings → Secrets and variables → Actions вашего репозитория
+2. Добавьте секрет `VITE_ORS_API_KEY` с вашим API ключом OpenRouteService
+3. Перейдите в Settings → Pages
+4. В разделе "Source" выберите "GitHub Actions"
+5. При каждом push в ветку `main` приложение автоматически соберется и задеплоится
+
+### Ручной деплой
 
 1. Соберите проект: `npm run build`
 2. Загрузите файлы из `dist/` на хостинг (HTTPS обязателен)
-3. Создайте бота через [@BotFather](https://t.me/BotFather)
-4. Настройте Mini App через команду `/newapp` в BotFather
-5. Укажите URL вашего приложения
+3. Для GitHub Pages используйте: `npm run build:pages`
+
+### Развертывание в Telegram
+
+1. После деплоя на GitHub Pages получите URL (например: `https://codesanitar.github.io/kids-safe-routes/`)
+2. Создайте бота через [@BotFather](https://t.me/BotFather)
+3. Настройте Mini App через команду `/newapp` в BotFather
+4. Укажите URL вашего приложения
 
