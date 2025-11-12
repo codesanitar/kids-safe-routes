@@ -21,7 +21,11 @@ export default function ControlPanel() {
     try {
       if (navigator.geolocation) {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject)
+          navigator.geolocation.getCurrentPosition(
+            resolve, 
+            reject,
+            { timeout: 5000, enableHighAccuracy: false }
+          )
         })
         return {
           lat: position.coords.latitude,
@@ -29,7 +33,8 @@ export default function ControlPanel() {
         }
       }
     } catch (err) {
-      console.error('Ошибка получения геолокации:', err)
+      // Тихая ошибка - геолокация не обязательна
+      console.log('Геолокация недоступна, можно выбрать точку вручную')
     }
     return null
   }
@@ -41,9 +46,10 @@ export default function ControlPanel() {
         if (point) {
           setStartPoint(point)
         }
+        // Если геолокация недоступна, пользователь выберет точку вручную
       })
     }
-  }, [mode])
+  }, [mode, startPoint])
 
   const handleMapClick = (point: Point) => {
     if (isAddingZone) {
@@ -188,7 +194,7 @@ export default function ControlPanel() {
             {mode === 'from-me' ? (
               <div>
                 <p>
-                  Старт: {startPoint ? '📍 Ваше местоположение' : '⏳ Загрузка...'}
+                  Старт: {startPoint ? '✅ Выбрана' : '👆 Нажмите на карте'}
                 </p>
                 <p>
                   Конец: {endPoint ? '✅ Выбрана' : '👆 Нажмите на карте'}
