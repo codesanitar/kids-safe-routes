@@ -6,6 +6,7 @@ import MapComponent from './MapComponent'
 import './ControlPanel.css'
 
 export default function ControlPanel() {
+  console.log('🎛️ ControlPanel компонент рендерится')
   const [mode, setMode] = useState<RouteMode>('from-me')
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()

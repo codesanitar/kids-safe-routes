@@ -5,13 +5,16 @@ import './App.css'
 
 function App() {
   const [isDebugMode, setIsDebugMode] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
+    console.log('🚀 App компонент загружен')
     // Проверяем режим отладки
     const isTelegram = window.Telegram?.WebApp !== undefined || 
                        window.location.search.includes('tgWebAppPlatform') ||
                        navigator.userAgent.includes('Telegram')
     setIsDebugMode(!isTelegram)
+    console.log('📱 Режим Telegram:', isTelegram)
   }, [])
 
   return (
@@ -33,7 +36,20 @@ function App() {
           🐛 РЕЖИМ ОТЛАДКИ (вне Telegram)
         </div>
       )}
-      <MapComponent />
+      <div style={{ 
+        position: 'absolute', 
+        top: isDebugMode ? '40px' : '10px', 
+        left: '10px', 
+        background: 'rgba(0,0,0,0.7)', 
+        color: 'white', 
+        padding: '5px 10px', 
+        borderRadius: '4px',
+        fontSize: '11px',
+        zIndex: 10001
+      }}>
+        Карта: {mapReady ? '✅' : '⏳'} | Панель: ✅
+      </div>
+      <MapComponent onMapReady={() => setMapReady(true)} />
       <ControlPanel />
     </div>
   )

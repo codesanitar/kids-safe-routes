@@ -10,6 +10,7 @@ interface MapComponentProps {
   route?: Route
   avoidZones?: AvoidZone[]
   onMapClick?: (point: Point) => void
+  onMapReady?: () => void
 }
 
 export default function MapComponent({
@@ -18,6 +19,7 @@ export default function MapComponent({
   route,
   avoidZones = [],
   onMapClick,
+  onMapReady,
 }: MapComponentProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
@@ -87,6 +89,7 @@ export default function MapComponent({
       map.current.on('load', () => {
         console.log('✅ Карта загружена успешно')
         setMapLoaded(true)
+        onMapReady?.()
       })
 
       map.current.on('error', (e) => {
