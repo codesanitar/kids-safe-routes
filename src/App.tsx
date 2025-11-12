@@ -20,10 +20,32 @@ function App() {
 
   useEffect(() => {
     // Проверяем режим отладки
-    const isTelegram = window.Telegram?.WebApp !== undefined || 
-                       window.location.search.includes('tgWebAppPlatform') ||
-                       navigator.userAgent.includes('Telegram')
-    setIsDebugMode(!isTelegram)
+    // Если есть признаки Telegram WebView - скрываем баннер отладки
+    const checkTelegram = () => {
+      // Проверяем наличие объекта Telegram.WebApp
+      const hasTelegramWebApp = typeof window !== 'undefined' && 
+                                 window.Telegram?.WebApp !== undefined &&
+                                 window.Telegram.WebApp !== null
+      
+      // Проверяем URL параметры Telegram
+      const hasTelegramParams = window.location.search.includes('tgWebAppPlatform') ||
+                                window.location.search.includes('tgWebAppStartParam') ||
+                                window.location.search.includes('tgWebAppData')
+      
+      // Проверяем User Agent
+      const hasTelegramUA = navigator.userAgent.includes('Telegram')
+      
+      const isTelegram = hasTelegramWebApp || hasTelegramParams || hasTelegramUA
+      setIsDebugMode(!isTelegram)
+    }
+    
+    // Проверяем сразу
+    checkTelegram()
+    
+    // Также проверяем через небольшую задержку на случай асинхронной загрузки Telegram WebApp
+    const timeoutId = setTimeout(checkTelegram, 500)
+    
+    return () => clearTimeout(timeoutId)
   }, [])
 
   // Получение геолокации пользователя
