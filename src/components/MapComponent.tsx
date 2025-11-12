@@ -26,50 +26,61 @@ export default function MapComponent({
   useEffect(() => {
     if (!mapContainer.current || map.current) return
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'yandex-tiles': {
-            type: 'raster',
-            tiles: [
-              'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}',
-            ],
-            tileSize: 256,
-            attribution:
-              '&copy; <a href="https://yandex.ru/maps/">Яндекс.Карты</a>',
+    console.log('Инициализация карты...')
+    
+    try {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: {
+          version: 8,
+          sources: {
+            'yandex-tiles': {
+              type: 'raster',
+              tiles: [
+                'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}',
+              ],
+              tileSize: 256,
+              attribution:
+                '&copy; <a href="https://yandex.ru/maps/">Яндекс.Карты</a>',
+            },
           },
+          layers: [
+            {
+              id: 'yandex-tiles-layer',
+              type: 'raster',
+              source: 'yandex-tiles',
+              minzoom: 0,
+              maxzoom: 19,
+            },
+          ],
         },
-        layers: [
-          {
-            id: 'yandex-tiles-layer',
-            type: 'raster',
-            source: 'yandex-tiles',
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
-      },
-      center: [37.6173, 55.7558], // Москва по умолчанию
-      zoom: 13,
-    })
-
-    map.current.on('load', () => {
-      setMapLoaded(true)
-    })
-
-    if (onMapClick) {
-      map.current.on('click', (e) => {
-        onMapClick({
-          lng: e.lngLat.lng,
-          lat: e.lngLat.lat,
-        })
+        center: [37.6173, 55.7558], // Москва по умолчанию
+        zoom: 13,
       })
-    }
 
-    return () => {
-      map.current?.remove()
+      map.current.on('load', () => {
+        console.log('Карта загружена успешно')
+        setMapLoaded(true)
+      })
+
+      map.current.on('error', (e) => {
+        console.error('Ошибка карты:', e)
+      })
+
+      if (onMapClick) {
+        map.current.on('click', (e) => {
+          onMapClick({
+            lng: e.lngLat.lng,
+            lat: e.lngLat.lat,
+          })
+        })
+      }
+
+      return () => {
+        map.current?.remove()
+      }
+    } catch (error) {
+      console.error('Ошибка инициализации карты:', error)
     }
   }, [onMapClick])
 
