@@ -257,6 +257,29 @@ export default function MapComponent({
     })
   }, [mapLoaded, avoidZones])
 
-  return <div ref={mapContainer} className="map-container" />
+  console.log('🗺️ MapComponent рендерится, mapLoaded:', mapLoaded)
+
+  return (
+    <div ref={mapContainer} className="map-container" style={{
+      width: '100%',
+      height: '100%',
+      backgroundColor: '#e0e0e0',
+      position: 'relative'
+    }}>
+      {!mapLoaded && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          color: '#666',
+          fontSize: '14px',
+          zIndex: 1000
+        }}>
+          Загрузка карты...
+        </div>
+      )}
+    </div>
+  )
 }
 
