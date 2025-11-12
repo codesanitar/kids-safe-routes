@@ -29,42 +29,78 @@ export default function MapComponent({
     console.log('Инициализация карты...')
     
     try {
+      // Используем OpenStreetMap для отладки (работает без CORS проблем)
+      // В продакшене можно переключить на Яндекс тайлы
+      const useYandexTiles = false // временно отключено для отладки
+      
+      const mapStyle = useYandexTiles ? {
+        version: 8,
+        sources: {
+          'yandex-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}',
+            ],
+            tileSize: 256,
+            attribution: '&copy; <a href="https://yandex.ru/maps/">Яндекс.Карты</a>',
+          },
+        },
+        layers: [
+          {
+            id: 'yandex-tiles-layer',
+            type: 'raster',
+            source: 'yandex-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      } : {
+        version: 8,
+        sources: {
+          'osm-tiles': {
+            type: 'raster',
+            tiles: [
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          },
+        },
+        layers: [
+          {
+            id: 'osm-tiles-layer',
+            type: 'raster',
+            source: 'osm-tiles',
+            minzoom: 0,
+            maxzoom: 19,
+          },
+        ],
+      }
+
       map.current = new maplibregl.Map({
         container: mapContainer.current,
-        style: {
-          version: 8,
-          sources: {
-            'yandex-tiles': {
-              type: 'raster',
-              tiles: [
-                'https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}',
-              ],
-              tileSize: 256,
-              attribution:
-                '&copy; <a href="https://yandex.ru/maps/">Яндекс.Карты</a>',
-            },
-          },
-          layers: [
-            {
-              id: 'yandex-tiles-layer',
-              type: 'raster',
-              source: 'yandex-tiles',
-              minzoom: 0,
-              maxzoom: 19,
-            },
-          ],
-        },
+        style: mapStyle,
         center: [37.6173, 55.7558], // Москва по умолчанию
         zoom: 13,
       })
 
       map.current.on('load', () => {
-        console.log('Карта загружена успешно')
+        console.log('✅ Карта загружена успешно')
         setMapLoaded(true)
       })
 
       map.current.on('error', (e) => {
-        console.error('Ошибка карты:', e)
+        console.error('❌ Ошибка карты:', e)
+      })
+
+      map.current.on('styledata', () => {
+        console.log('📊 Стиль карты загружен')
+      })
+
+      map.current.on('data', (e) => {
+        if (e.dataType === 'source' && e.isSourceLoaded) {
+          console.log('🗺️ Источник данных загружен:', e.sourceId)
+        }
       })
 
       if (onMapClick) {
