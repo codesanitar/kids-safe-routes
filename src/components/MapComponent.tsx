@@ -40,8 +40,8 @@ export default function MapComponent({
     try {
       // Используем OSM тайлы - они работают корректно с MapLibre GL
       // Яндекс тайлы имеют проблемы с системой координат (смещение по Y)
-      const mapStyle = {
-        version: 8,
+            const mapStyle: maplibregl.StyleSpecification = {
+              version: 8,
         sources: {
           'osm-tiles': {
             type: 'raster',
@@ -80,14 +80,14 @@ export default function MapComponent({
       })
 
       map.current.on('sourcedata', (e) => {
-        if (e.isSourceLoaded && !mapLoaded) {
+        if ((e as any).isSourceLoaded && !mapLoaded) {
           setMapLoaded(true)
           onMapReadyRef.current?.()
         }
       })
 
       map.current.on('data', (e) => {
-        if (e.dataType === 'source' && e.isSourceLoaded && !mapLoaded) {
+        if (e.dataType === 'source' && (e as any).isSourceLoaded && !mapLoaded) {
           setMapLoaded(true)
           onMapReadyRef.current?.()
         }
@@ -295,7 +295,7 @@ export default function MapComponent({
 
       try {
         // Проверяем, что источник не существует перед добавлением
-        if (!map.current?.getSource(sourceId)) {
+        if (map.current && !map.current.getSource(sourceId)) {
           map.current.addSource(sourceId, {
             type: 'geojson',
             data: {
@@ -304,9 +304,10 @@ export default function MapComponent({
                 type: 'Polygon',
                 coordinates: [coordinates],
               },
+              properties: {},
             },
           })
-        } else {
+        } else if (map.current) {
           // Обновляем данные существующего источника
           const source = map.current.getSource(sourceId) as maplibregl.GeoJSONSource
           if (source && 'setData' in source) {
@@ -316,12 +317,13 @@ export default function MapComponent({
                 type: 'Polygon',
                 coordinates: [coordinates],
               },
+              properties: {},
             })
           }
         }
 
         // Добавляем слои только если их нет
-        if (!map.current?.getLayer(layerId)) {
+        if (map.current && !map.current.getLayer(layerId)) {
           map.current.addLayer({
             id: layerId,
             type: 'fill',
@@ -333,7 +335,7 @@ export default function MapComponent({
           })
         }
 
-        if (!map.current?.getLayer(`${layerId}-outline`)) {
+        if (map.current && !map.current.getLayer(`${layerId}-outline`)) {
           map.current.addLayer({
             id: `${layerId}-outline`,
             type: 'line',

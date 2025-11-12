@@ -132,7 +132,7 @@ export async function buildRoute(request: RouteRequest): Promise<Route> {
         // @mapbox/polyline возвращает координаты как [lat, lng]
         try {
           const decoded = polyline.decode(route.geometry)
-          geometry = decoded.map((coord) => {
+          geometry = decoded.map((coord: [number, number]) => {
             // Polyline возвращает [lat, lng], нам нужно [lng, lat]
             const [lat, lng] = coord
             return { lng, lat }

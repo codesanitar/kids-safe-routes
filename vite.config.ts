@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Определяем base path для GitHub Pages
+// Для GitHub Pages используем '/kids-safe-routes/' (имя репозитория)
+// Для локальной разработки используем '/'
+const base = process.env.GITHUB_PAGES === 'true' ? '/kids-safe-routes/' : '/'
+
 export default defineConfig({
   plugins: [react()],
-  base: process.env.GITHUB_PAGES ? '/kids-safe-routes/' : '/',
+  base,
   server: {
     host: true,
     port: 5173,
