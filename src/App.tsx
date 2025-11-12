@@ -7,7 +7,7 @@ import { buildRoute } from './services/ors'
 import './App.css'
 
 function App() {
-  const [isDebugMode, setIsDebugMode] = useState(false)
+  const [isDebugMode, setIsDebugMode] = useState(true) // По умолчанию режим отладки
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -19,20 +19,21 @@ function App() {
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null)
 
   useEffect(() => {
-    // Проверяем режим отладки
-    // Если есть признаки Telegram WebView - скрываем баннер отладки
+    // Проверяем, запущено ли приложение в Telegram WebView
+    // Если компонент обернут в SDKProvider (в main.tsx), значит мы в Telegram
+    // Проверяем наличие window.Telegram.WebApp - он должен быть доступен в Telegram
     const checkTelegram = () => {
-      // Проверяем наличие объекта Telegram.WebApp
+      // Проверяем наличие объекта Telegram.WebApp (основной признак Telegram WebView)
       const hasTelegramWebApp = typeof window !== 'undefined' && 
                                  window.Telegram?.WebApp !== undefined &&
                                  window.Telegram.WebApp !== null
       
-      // Проверяем URL параметры Telegram
+      // Проверяем URL параметры Telegram (дополнительная проверка)
       const hasTelegramParams = window.location.search.includes('tgWebAppPlatform') ||
                                 window.location.search.includes('tgWebAppStartParam') ||
                                 window.location.search.includes('tgWebAppData')
       
-      // Проверяем User Agent
+      // Проверяем User Agent (дополнительная проверка)
       const hasTelegramUA = navigator.userAgent.includes('Telegram')
       
       const isTelegram = hasTelegramWebApp || hasTelegramParams || hasTelegramUA
@@ -42,10 +43,16 @@ function App() {
     // Проверяем сразу
     checkTelegram()
     
-    // Также проверяем через небольшую задержку на случай асинхронной загрузки Telegram WebApp
-    const timeoutId = setTimeout(checkTelegram, 500)
+    // Проверяем несколько раз с задержками, так как Telegram.WebApp может загружаться асинхронно
+    const timeout1 = setTimeout(checkTelegram, 100)
+    const timeout2 = setTimeout(checkTelegram, 500)
+    const timeout3 = setTimeout(checkTelegram, 1000)
     
-    return () => clearTimeout(timeoutId)
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+      clearTimeout(timeout3)
+    }
   }, [])
 
   // Получение геолокации пользователя
