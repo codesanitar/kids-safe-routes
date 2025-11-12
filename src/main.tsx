@@ -4,10 +4,29 @@ import { SDKProvider } from '@tma.js/sdk-react'
 import App from './App'
 import './index.css'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <SDKProvider>
+// Проверяем, запущено ли приложение в Telegram WebView
+const isTelegramWebView = () => {
+  return window.Telegram?.WebApp !== undefined || 
+         window.location.search.includes('tgWebAppPlatform') ||
+         navigator.userAgent.includes('Telegram')
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root')!)
+
+if (isTelegramWebView()) {
+  // Режим Telegram Mini App
+  root.render(
+    <React.StrictMode>
+      <SDKProvider>
+        <App />
+      </SDKProvider>
+    </React.StrictMode>
+  )
+} else {
+  // Режим отладки вне Telegram
+  root.render(
+    <React.StrictMode>
       <App />
-    </SDKProvider>
-  </React.StrictMode>,
-)
+    </React.StrictMode>
+  )
+}
