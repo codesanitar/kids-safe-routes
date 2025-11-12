@@ -6,7 +6,6 @@ import MapComponent from './MapComponent'
 import './ControlPanel.css'
 
 export default function ControlPanel() {
-  console.log('🎛️ ControlPanel компонент рендерится')
   const [mode, setMode] = useState<RouteMode>('from-me')
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -35,7 +34,6 @@ export default function ControlPanel() {
       }
     } catch (err) {
       // Тихая ошибка - геолокация не обязательна
-      console.log('Геолокация недоступна, можно выбрать точку вручную')
     }
     return null
   }

@@ -26,20 +26,7 @@ export default function MapComponent({
   const [mapLoaded, setMapLoaded] = useState(false)
 
   useEffect(() => {
-    if (!mapContainer.current || map.current) {
-      console.log('⏭️ Пропуск инициализации:', {
-        hasContainer: !!mapContainer.current,
-        hasMap: !!map.current
-      })
-      return
-    }
-
-    console.log('🗺️ Инициализация карты...', {
-      containerSize: {
-        width: mapContainer.current.offsetWidth,
-        height: mapContainer.current.offsetHeight
-      }
-    })
+    if (!mapContainer.current || map.current) return
     
     try {
       const mapStyle = {
@@ -72,44 +59,31 @@ export default function MapComponent({
         zoom: 13,
       })
 
-      console.log('📦 MapLibre объект создан')
-
       map.current.on('load', () => {
-        console.log('✅ Карта загружена успешно')
         setMapLoaded(true)
         onMapReady?.()
       })
 
       map.current.on('error', (e) => {
-        console.error('❌ Ошибка карты:', e)
-      })
-
-      map.current.on('styledata', () => {
-        console.log('📊 Стиль карты загружен')
+        console.error('Ошибка карты:', e)
       })
 
       map.current.on('sourcedata', (e) => {
-        console.log('📡 Данные источника:', e.sourceId, e.isSourceLoaded ? 'загружены' : 'загрузка...')
         if (e.isSourceLoaded && !mapLoaded) {
-          console.log('✅ Источник загружен, помечаем карту как готовую')
           setMapLoaded(true)
           onMapReady?.()
         }
       })
 
       map.current.on('data', (e) => {
-        if (e.dataType === 'source' && e.isSourceLoaded) {
-          console.log('🗺️ Источник данных загружен:', e.sourceId)
-          if (!mapLoaded) {
-            setMapLoaded(true)
-            onMapReady?.()
-          }
+        if (e.dataType === 'source' && e.isSourceLoaded && !mapLoaded) {
+          setMapLoaded(true)
+          onMapReady?.()
         }
       })
 
       if (onMapClick) {
         map.current.on('click', (e) => {
-          console.log('🖱️ Клик по карте:', e.lngLat)
           onMapClick({
             lng: e.lngLat.lng,
             lat: e.lngLat.lat,
@@ -118,16 +92,15 @@ export default function MapComponent({
       }
 
       // Fallback: если через 3 секунды load не сработал, считаем карту готовой
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         if (!mapLoaded && map.current) {
-          console.log('⏰ Таймаут: считаем карту готовой')
           setMapLoaded(true)
           onMapReady?.()
         }
       }, 3000)
 
       return () => {
-        console.log('🧹 Очистка карты')
+        clearTimeout(timeoutId)
         map.current?.remove()
         map.current = null
       }
@@ -269,8 +242,6 @@ export default function MapComponent({
       })
     })
   }, [mapLoaded, avoidZones])
-
-  console.log('🗺️ MapComponent рендерится, mapLoaded:', mapLoaded)
 
   return (
     <div ref={mapContainer} className="map-container" style={{

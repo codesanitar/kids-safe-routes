@@ -8,13 +8,11 @@ function App() {
   const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
-    console.log('🚀 App компонент загружен')
     // Проверяем режим отладки
     const isTelegram = window.Telegram?.WebApp !== undefined || 
                        window.location.search.includes('tgWebAppPlatform') ||
                        navigator.userAgent.includes('Telegram')
     setIsDebugMode(!isTelegram)
-    console.log('📱 Режим Telegram:', isTelegram)
   }, [])
 
   return (
