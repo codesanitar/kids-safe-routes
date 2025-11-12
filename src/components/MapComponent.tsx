@@ -26,16 +26,23 @@ export default function MapComponent({
   const [mapLoaded, setMapLoaded] = useState(false)
 
   useEffect(() => {
-    if (!mapContainer.current || map.current) return
+    if (!mapContainer.current || map.current) {
+      console.log('⏭️ Пропуск инициализации:', {
+        hasContainer: !!mapContainer.current,
+        hasMap: !!map.current
+      })
+      return
+    }
 
-    console.log('Инициализация карты...')
+    console.log('🗺️ Инициализация карты...', {
+      containerSize: {
+        width: mapContainer.current.offsetWidth,
+        height: mapContainer.current.offsetHeight
+      }
+    })
     
     try {
-      // Используем OpenStreetMap для отладки (работает без CORS проблем)
-      // В продакшене можно переключить на Яндекс тайлы
-      const useYandexTiles = false // временно отключено для отладки
-      
-      const mapStyle = useYandexTiles ? {
+      const mapStyle = {
         version: 8,
         sources: {
           'yandex-tiles': {
@@ -56,27 +63,6 @@ export default function MapComponent({
             maxzoom: 19,
           },
         ],
-      } : {
-        version: 8,
-        sources: {
-          'osm-tiles': {
-            type: 'raster',
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          },
-        },
-        layers: [
-          {
-            id: 'osm-tiles-layer',
-            type: 'raster',
-            source: 'osm-tiles',
-            minzoom: 0,
-            maxzoom: 19,
-          },
-        ],
       }
 
       map.current = new maplibregl.Map({
@@ -85,6 +71,8 @@ export default function MapComponent({
         center: [37.6173, 55.7558], // Москва по умолчанию
         zoom: 13,
       })
+
+      console.log('📦 MapLibre объект создан')
 
       map.current.on('load', () => {
         console.log('✅ Карта загружена успешно')
@@ -100,14 +88,28 @@ export default function MapComponent({
         console.log('📊 Стиль карты загружен')
       })
 
+      map.current.on('sourcedata', (e) => {
+        console.log('📡 Данные источника:', e.sourceId, e.isSourceLoaded ? 'загружены' : 'загрузка...')
+        if (e.isSourceLoaded && !mapLoaded) {
+          console.log('✅ Источник загружен, помечаем карту как готовую')
+          setMapLoaded(true)
+          onMapReady?.()
+        }
+      })
+
       map.current.on('data', (e) => {
         if (e.dataType === 'source' && e.isSourceLoaded) {
           console.log('🗺️ Источник данных загружен:', e.sourceId)
+          if (!mapLoaded) {
+            setMapLoaded(true)
+            onMapReady?.()
+          }
         }
       })
 
       if (onMapClick) {
         map.current.on('click', (e) => {
+          console.log('🖱️ Клик по карте:', e.lngLat)
           onMapClick({
             lng: e.lngLat.lng,
             lat: e.lngLat.lat,
@@ -115,13 +117,24 @@ export default function MapComponent({
         })
       }
 
+      // Fallback: если через 3 секунды load не сработал, считаем карту готовой
+      setTimeout(() => {
+        if (!mapLoaded && map.current) {
+          console.log('⏰ Таймаут: считаем карту готовой')
+          setMapLoaded(true)
+          onMapReady?.()
+        }
+      }, 3000)
+
       return () => {
+        console.log('🧹 Очистка карты')
         map.current?.remove()
+        map.current = null
       }
     } catch (error) {
-      console.error('Ошибка инициализации карты:', error)
+      console.error('❌ Ошибка инициализации карты:', error)
     }
-  }, [onMapClick])
+  }, [onMapClick, onMapReady])
 
   // Обновление маркеров точек
   useEffect(() => {
