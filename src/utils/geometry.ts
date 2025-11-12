@@ -33,19 +33,23 @@ export function generateCirclePolygon(
 }
 
 /**
- * Преобразует AvoidZone в GeoJSON Polygon для ORS API
+ * Преобразует AvoidZone в формат для avoid_polygons ORS API
+ * OpenRouteService требует формат GeoJSON Polygon:
+ * [[[lng, lat], [lng, lat], ...]] - массив с одним элементом (внешнее кольцо)
  */
-export function zoneToGeoJSONPolygon(zone: AvoidZone): number[][][] {
+export function zoneToAvoidPolygon(zone: AvoidZone): number[][][] {
   const coordinates = zone.polygon.map((p) => [p.lng, p.lat])
   // Замыкаем полигон (первая точка = последняя)
   coordinates.push(coordinates[0])
+  // Оборачиваем в дополнительный массив для GeoJSON формата
   return [coordinates]
 }
 
 /**
  * Преобразует массив зон в формат для avoid_polygons ORS
+ * Формат: массив полигонов, каждый полигон в формате GeoJSON [[[lng, lat], ...]]
  */
 export function zonesToAvoidPolygons(zones: AvoidZone[]): number[][][][] {
-  return zones.map((zone) => zoneToGeoJSONPolygon(zone))
+  return zones.map((zone) => zoneToAvoidPolygon(zone))
 }
 

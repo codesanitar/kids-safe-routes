@@ -4,24 +4,19 @@
 }
 
 .map-marker {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  color: white;
   cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  pointer-events: auto;
 }
 
 .start-marker {
-  background-color: #4caf50;
+  /* Флажок старта - зеленый */
 }
 
 .end-marker {
-  background-color: #f44336;
+  /* Флажок финиша - красный */
 }
 

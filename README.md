@@ -19,13 +19,15 @@ npm install
 
 ## Настройка
 
-1. Создайте файл `.env` на основе `.env.example`
-2. Получите API ключ на [OpenRouteService](https://openrouteservice.org/dev/#/signup)
+1. Создайте файл `.env` в корне проекта
+2. Получите бесплатный API ключ на [OpenRouteService](https://openrouteservice.org/dev/#/signup)
 3. Добавьте ключ в `.env`:
 
 ```
 VITE_ORS_API_KEY=your_api_key_here
 ```
+
+**Важно:** Без API ключа построение маршрутов не будет работать. В режиме разработки используется прокси Vite для обхода CORS.
 
 ## Запуск
 

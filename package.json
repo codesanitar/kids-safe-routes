@@ -10,6 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
     "@tma.js/sdk-react": "^2.0.0",
     "maplibre-gl": "^3.6.2",
     "react": "^18.2.0",
@@ -28,4 +29,3 @@
     "vite": "^5.0.8"
   }
 }
-
