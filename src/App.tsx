@@ -4,10 +4,35 @@ import ControlPanel from './components/ControlPanel'
 import { Point, Route, AvoidZone } from './types'
 import { generateCirclePolygon } from './utils/geometry'
 import { buildRoute } from './services/ors'
+import { authenticate, isAuthenticated } from './services/auth'
 import './App.css'
 
 function App() {
-  const [isDebugMode, setIsDebugMode] = useState(true) // По умолчанию режим отладки
+  // Определяем режим отладки сразу при инициализации компонента
+  // Если компонент обернут в SDKProvider (в main.tsx), значит мы в Telegram
+  // Проверяем наличие window.Telegram.WebApp - он должен быть доступен в Telegram
+  const checkIsTelegram = () => {
+    // Проверяем наличие объекта Telegram.WebApp (основной признак Telegram WebView)
+    const hasTelegramWebApp = typeof window !== 'undefined' && 
+                               window.Telegram?.WebApp !== undefined &&
+                               window.Telegram.WebApp !== null
+    
+    // Проверяем URL параметры Telegram (дополнительная проверка)
+    const hasTelegramParams = typeof window !== 'undefined' &&
+                              (window.location.search.includes('tgWebAppPlatform') ||
+                               window.location.search.includes('tgWebAppStartParam') ||
+                               window.location.search.includes('tgWebAppData'))
+    
+    // Проверяем User Agent (дополнительная проверка)
+    const hasTelegramUA = typeof navigator !== 'undefined' && 
+                          navigator.userAgent.includes('Telegram')
+    
+    return hasTelegramWebApp || hasTelegramParams || hasTelegramUA
+  }
+
+  // По умолчанию предполагаем, что мы НЕ в режиме отладки (т.е. в Telegram)
+  // Это предотвратит показ баннера до завершения проверки
+  const [isDebugMode, setIsDebugMode] = useState(false)
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -17,26 +42,14 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isAddingZone, setIsAddingZone] = useState(false)
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null)
+  const [isAuthenticating, setIsAuthenticating] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   useEffect(() => {
     // Проверяем, запущено ли приложение в Telegram WebView
-    // Если компонент обернут в SDKProvider (в main.tsx), значит мы в Telegram
-    // Проверяем наличие window.Telegram.WebApp - он должен быть доступен в Telegram
+    // Повторяем проверку несколько раз, так как Telegram.WebApp может загружаться асинхронно
     const checkTelegram = () => {
-      // Проверяем наличие объекта Telegram.WebApp (основной признак Telegram WebView)
-      const hasTelegramWebApp = typeof window !== 'undefined' && 
-                                 window.Telegram?.WebApp !== undefined &&
-                                 window.Telegram.WebApp !== null
-      
-      // Проверяем URL параметры Telegram (дополнительная проверка)
-      const hasTelegramParams = window.location.search.includes('tgWebAppPlatform') ||
-                                window.location.search.includes('tgWebAppStartParam') ||
-                                window.location.search.includes('tgWebAppData')
-      
-      // Проверяем User Agent (дополнительная проверка)
-      const hasTelegramUA = navigator.userAgent.includes('Telegram')
-      
-      const isTelegram = hasTelegramWebApp || hasTelegramParams || hasTelegramUA
+      const isTelegram = checkIsTelegram()
       setIsDebugMode(!isTelegram)
     }
     
@@ -44,16 +57,58 @@ function App() {
     checkTelegram()
     
     // Проверяем несколько раз с задержками, так как Telegram.WebApp может загружаться асинхронно
-    const timeout1 = setTimeout(checkTelegram, 100)
-    const timeout2 = setTimeout(checkTelegram, 500)
-    const timeout3 = setTimeout(checkTelegram, 1000)
+    const timeout1 = setTimeout(checkTelegram, 50)
+    const timeout2 = setTimeout(checkTelegram, 200)
+    const timeout3 = setTimeout(checkTelegram, 500)
+    const timeout4 = setTimeout(checkTelegram, 1000)
+    const timeout5 = setTimeout(checkTelegram, 2000)
     
     return () => {
       clearTimeout(timeout1)
       clearTimeout(timeout2)
       clearTimeout(timeout3)
+      clearTimeout(timeout4)
+      clearTimeout(timeout5)
     }
   }, [])
+
+  // Авторизация при загрузке приложения
+  useEffect(() => {
+    const performAuth = async () => {
+      setIsAuthenticating(true)
+      setAuthError(null)
+
+      // В режиме отладки пропускаем авторизацию
+      if (isDebugMode) {
+        setIsAuthenticating(false)
+        return
+      }
+
+      // Получаем initData из window.Telegram.WebApp
+      let initDataString: string | null = null
+
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
+        initDataString = window.Telegram.WebApp.initData
+      }
+
+      if (!initDataString) {
+        setAuthError('Не удалось получить данные авторизации от Telegram')
+        setIsAuthenticating(false)
+        return
+      }
+
+      try {
+        await authenticate(initDataString)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка авторизации'
+        setAuthError(errorMessage)
+      } finally {
+        setIsAuthenticating(false)
+      }
+    }
+
+    performAuth()
+  }, [isDebugMode])
 
   // Получение геолокации пользователя
   const getUserLocation = async (): Promise<Point | null> => {
@@ -170,6 +225,62 @@ function App() {
     }
 
     setAvoidZones(avoidZones.map((z) => (z.id === zoneId ? updatedZone : z)))
+  }
+
+  // Если идет авторизация, показываем индикатор загрузки
+  if (isAuthenticating) {
+    return (
+      <div className="app" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{ fontSize: '24px' }}>⏳</div>
+        <div>Авторизация...</div>
+      </div>
+    )
+  }
+
+  // Если авторизация не удалась (и не режим отладки), показываем ошибку
+  if (authError && !isDebugMode) {
+    return (
+      <div className="app" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '20px',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '48px' }}>⚠️</div>
+        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Не удалось авторизоваться в сервисе</div>
+        <div style={{ fontSize: '14px', color: '#666' }}>{authError}</div>
+      </div>
+    )
+  }
+
+  // Если не авторизован (и не режим отладки), показываем ошибку
+  if (!isAuthenticated() && !isDebugMode) {
+    return (
+      <div className="app" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '20px',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '48px' }}>⚠️</div>
+        <div style={{ fontSize: '18px', fontWeight: 'bold' }}>Не удалось авторизоваться в сервисе</div>
+      </div>
+    )
   }
 
   return (

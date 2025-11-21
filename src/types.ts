@@ -18,3 +18,14 @@ export interface Route {
 
 export type RouteMode = 'from-me' | 'a-to-b'
 
+// Типы для авторизации
+export interface User {
+  tg_id: number
+  username?: string
+  first_name?: string
+}
+
+export interface AuthResponse {
+  accessToken: string
+  user: User
+}
