@@ -8,7 +8,6 @@ import { authenticate, isAuthenticated } from './services/auth'
 import './App.css'
 
 function App() {
-  const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
   const [route, setRoute] = useState<Route | undefined>()
@@ -269,7 +268,7 @@ function App() {
         route={route}
         avoidZones={avoidZones}
         onMapClick={handleMapClick}
-        onMapReady={() => setMapReady(true)}
+        onMapReady={() => {}}
       />
       <ControlPanel
         startPoint={startPoint}
