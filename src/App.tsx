@@ -8,9 +8,7 @@ import { authenticate, isAuthenticated } from './services/auth'
 import './App.css'
 
 function App() {
-  // Определяем режим отладки сразу при инициализации компонента
-  // Если компонент обернут в SDKProvider (в main.tsx), значит мы в Telegram
-  // Проверяем наличие window.Telegram.WebApp - он должен быть доступен в Telegram
+  // Проверяем, запущено ли приложение в Telegram WebView
   const checkIsTelegram = () => {
     // Проверяем наличие объекта Telegram.WebApp (основной признак Telegram WebView)
     const hasTelegramWebApp = typeof window !== 'undefined' && 
@@ -30,9 +28,8 @@ function App() {
     return hasTelegramWebApp || hasTelegramParams || hasTelegramUA
   }
 
-  // По умолчанию предполагаем, что мы НЕ в режиме отладки (т.е. в Telegram)
-  // Это предотвратит показ баннера до завершения проверки
-  const [isDebugMode, setIsDebugMode] = useState(false)
+  // По умолчанию предполагаем, что мы в Telegram
+  const [isInTelegram, setIsInTelegram] = useState(true)
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -50,7 +47,7 @@ function App() {
     // Повторяем проверку несколько раз, так как Telegram.WebApp может загружаться асинхронно
     const checkTelegram = () => {
       const isTelegram = checkIsTelegram()
-      setIsDebugMode(!isTelegram)
+      setIsInTelegram(isTelegram)
     }
     
     // Проверяем сразу
@@ -78,8 +75,8 @@ function App() {
       setIsAuthenticating(true)
       setAuthError(null)
 
-      // В режиме отладки пропускаем авторизацию
-      if (isDebugMode) {
+      // Если не в Telegram, пропускаем авторизацию
+      if (!isInTelegram) {
         setIsAuthenticating(false)
         return
       }
@@ -108,7 +105,7 @@ function App() {
     }
 
     performAuth()
-  }, [isDebugMode])
+  }, [isInTelegram])
 
   // Получение геолокации пользователя
   const getUserLocation = async (): Promise<Point | null> => {
@@ -244,8 +241,8 @@ function App() {
     )
   }
 
-  // Если авторизация не удалась (и не режим отладки), показываем ошибку
-  if (authError && !isDebugMode) {
+  // Если авторизация не удалась (и мы в Telegram), показываем ошибку
+  if (authError && isInTelegram) {
     return (
       <div className="app" style={{
         display: 'flex',
@@ -264,8 +261,8 @@ function App() {
     )
   }
 
-  // Если не авторизован (и не режим отладки), показываем ошибку
-  if (!isAuthenticated() && !isDebugMode) {
+  // Если не авторизован (и мы в Telegram), показываем ошибку
+  if (!isAuthenticated() && isInTelegram) {
     return (
       <div className="app" style={{
         display: 'flex',
@@ -285,7 +282,7 @@ function App() {
 
   return (
     <div className="app">
-      {isDebugMode && (
+      {!isInTelegram && (
         <div style={{
           position: 'absolute',
           top: 0,
@@ -299,12 +296,12 @@ function App() {
           zIndex: 10000,
           fontWeight: 'bold'
         }}>
-          🐛 РЕЖИМ ОТЛАДКИ (вне Telegram)
+          ⚠️ Приложение запущено вне Telegram
         </div>
       )}
       <div style={{ 
         position: 'absolute', 
-        top: isDebugMode ? '40px' : '10px', 
+        top: !isInTelegram ? '40px' : '10px', 
         left: '10px', 
         background: 'rgba(0,0,0,0.7)', 
         color: 'white', 
