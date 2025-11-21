@@ -26,47 +26,22 @@ function App() {
     const performAuth = async () => {
       if (!isMounted) return
 
-      // Проверяем наличие initData
-      const hasInitData = typeof window !== 'undefined' && 
-                          window.Telegram?.WebApp?.initData !== undefined &&
-                          window.Telegram.WebApp.initData !== null &&
-                          window.Telegram.WebApp.initData !== ''
+      const initDataString = window.Telegram?.WebApp?.initData || null
 
-      console.log('🚀 Авторизация:', {
-        hasInitData,
-        windowTelegram: !!window.Telegram,
-        webApp: !!window.Telegram?.WebApp,
-        initData: !!window.Telegram?.WebApp?.initData,
-        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'НЕ УСТАНОВЛЕН',
-        authSecretKey: import.meta.env.VITE_AUTH_SECRET_KEY ? 'установлен' : 'НЕ УСТАНОВЛЕН'
-      })
-
-      setIsAuthenticating(true)
-      setAuthError(null)
-
-      // Если нет initData - пропускаем авторизацию
-      if (!hasInitData) {
-        console.log('⏭️ Нет initData, пропускаем авторизацию')
+      if (!initDataString) {
         if (isMounted) {
+          setAuthError('Не удалось получить данные авторизации от Telegram')
           setIsAuthenticating(false)
         }
         return
       }
 
-      // Получаем initData из window.Telegram.WebApp
-      const initDataString = window.Telegram!.WebApp!.initData!
-
-      console.log('📋 InitData:', {
-        length: initDataString.length,
-        preview: initDataString.substring(0, 50) + '...'
-      })
+      setIsAuthenticating(true)
+      setAuthError(null)
 
       try {
-        console.log('✅ Вызываем authenticate()')
         await authenticate(initDataString)
-        console.log('✅ Авторизация успешна')
       } catch (err) {
-        console.error('❌ Ошибка авторизации:', err)
         if (isMounted) {
           const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка авторизации'
           setAuthError(errorMessage)
@@ -78,12 +53,10 @@ function App() {
       }
     }
 
-    // Небольшая задержка чтобы дать время initData загрузиться
-    const timeout = setTimeout(performAuth, 200)
+    performAuth()
 
     return () => {
       isMounted = false
-      clearTimeout(timeout)
     }
   }, [])
 
