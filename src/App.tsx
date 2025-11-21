@@ -13,6 +13,7 @@ function App() {
   const isInTelegram = typeof window !== 'undefined' && 
                        window.Telegram && 
                        window.Telegram.WebApp
+  const isDebugMode = !isInTelegram // Режим отладки по умолчанию выключен (только когда не в Telegram)
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -239,7 +240,7 @@ function App() {
 
   return (
     <div className="app">
-      {!isInTelegram && (
+      {isDebugMode && (
         <div style={{
           position: 'absolute',
           top: 0,
@@ -253,7 +254,22 @@ function App() {
           zIndex: 10000,
           fontWeight: 'bold'
         }}>
-          ⚠️ Приложение запущено вне Telegram
+          🐛 РЕЖИМ ОТЛАДКИ (вне Telegram)
+        </div>
+      )}
+      {isDebugMode && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '40px', 
+          left: '10px', 
+          background: 'rgba(0,0,0,0.7)', 
+          color: 'white', 
+          padding: '5px 10px', 
+          borderRadius: '4px',
+          fontSize: '11px',
+          zIndex: 10001
+        }}>
+          Карта: {mapReady ? '✅' : '⏳'} | Панель: ✅
         </div>
       )}
       <MapComponent
