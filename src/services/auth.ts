@@ -47,6 +47,13 @@ export async function authenticate(initData: string): Promise<AuthResponse> {
 
   const authUrl = `${API_BASE_URL}${AUTH_ENDPOINT}`
 
+  console.log('🔐 Авторизация:', {
+    url: authUrl,
+    hasSecretKey: !!AUTH_SECRET_KEY,
+    initDataLength: initData.length,
+    initDataPreview: initData.substring(0, 50) + '...'
+  })
+
   try {
     const response = await fetch(authUrl, {
       method: 'POST',
@@ -55,6 +62,12 @@ export async function authenticate(initData: string): Promise<AuthResponse> {
         'Authorization': `Bearer ${AUTH_SECRET_KEY}`,
         'x-init-data': initData,
       },
+    })
+
+    console.log('📡 Ответ авторизации:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
     })
 
     if (!response.ok) {

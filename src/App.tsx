@@ -8,12 +8,7 @@ import { authenticate, isAuthenticated } from './services/auth'
 import './App.css'
 
 function App() {
-  // Простая проверка согласно документации Telegram: window.Telegram && window.Telegram.WebApp
-  // Если компонент обернут в SDKProvider, window.Telegram.WebApp доступен сразу
-  const isInTelegram = typeof window !== 'undefined' && 
-                       window.Telegram && 
-                       window.Telegram.WebApp
-  const isDebugMode = !isInTelegram // Режим отладки по умолчанию выключен (только когда не в Telegram)
+  const [isDebugMode, setIsDebugMode] = useState(false) // По умолчанию режим отладки выключен
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -26,44 +21,99 @@ function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
 
-
-  // Авторизация при загрузке приложения
+  // Проверяем наличие initData динамически
   useEffect(() => {
+    const checkInitData = () => {
+      const hasInitData = typeof window !== 'undefined' && 
+                          window.Telegram?.WebApp?.initData !== undefined &&
+                          window.Telegram.WebApp.initData !== null &&
+                          window.Telegram.WebApp.initData !== ''
+      
+      setIsDebugMode(!hasInitData)
+    }
+
+    // Проверяем сразу
+    checkInitData()
+    
+    // Проверяем несколько раз с задержками, так как initData может загружаться асинхронно
+    const timeout1 = setTimeout(checkInitData, 100)
+    const timeout2 = setTimeout(checkInitData, 500)
+    const timeout3 = setTimeout(checkInitData, 1000)
+    
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+      clearTimeout(timeout3)
+    }
+  }, [])
+
+  // Авторизация при загрузке приложения (выполняется один раз)
+  useEffect(() => {
+    let isMounted = true
+
     const performAuth = async () => {
+      // Проверяем наличие initData прямо здесь - это главный признак что мы в миниаппе
+      const hasInitData = typeof window !== 'undefined' && 
+                          window.Telegram?.WebApp?.initData !== undefined &&
+                          window.Telegram.WebApp.initData !== null &&
+                          window.Telegram.WebApp.initData !== ''
+
+      if (!isMounted) return
+
+      console.log('🚀 Начало авторизации:', {
+        hasInitData,
+        windowTelegram: !!window.Telegram,
+        webApp: !!window.Telegram?.WebApp,
+        initData: !!window.Telegram?.WebApp?.initData,
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL ? 'установлен' : 'НЕ УСТАНОВЛЕН',
+        authSecretKey: import.meta.env.VITE_AUTH_SECRET_KEY ? 'установлен' : 'НЕ УСТАНОВЛЕН'
+      })
+
       setIsAuthenticating(true)
       setAuthError(null)
 
-      // Если не в Telegram, пропускаем авторизацию
-      if (!isInTelegram) {
-        setIsAuthenticating(false)
+      // Если нет initData - пропускаем авторизацию (режим отладки)
+      if (!hasInitData) {
+        console.log('⏭️ Пропуск авторизации: нет initData (режим отладки)')
+        if (isMounted) {
+          setIsAuthenticating(false)
+        }
         return
       }
 
       // Получаем initData из window.Telegram.WebApp
-      let initDataString: string | null = null
+      const initDataString = window.Telegram!.WebApp!.initData!
 
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) {
-        initDataString = window.Telegram.WebApp.initData
-      }
-
-      if (!initDataString) {
-        setAuthError('Не удалось получить данные авторизации от Telegram')
-        setIsAuthenticating(false)
-        return
-      }
+      console.log('📋 InitData найден:', {
+        length: initDataString.length,
+        preview: initDataString.substring(0, 50) + '...'
+      })
 
       try {
+        console.log('✅ Вызываем authenticate()')
         await authenticate(initDataString)
+        console.log('✅ Авторизация успешна')
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка авторизации'
-        setAuthError(errorMessage)
+        console.error('❌ Ошибка авторизации:', err)
+        if (isMounted) {
+          const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка авторизации'
+          setAuthError(errorMessage)
+        }
       } finally {
-        setIsAuthenticating(false)
+        if (isMounted) {
+          setIsAuthenticating(false)
+        }
       }
     }
 
-    performAuth()
-  }, [isInTelegram])
+    // Небольшая задержка чтобы дать время initData загрузиться
+    const timeout = setTimeout(performAuth, 100)
+
+    return () => {
+      isMounted = false
+      clearTimeout(timeout)
+    }
+  }, [])
 
   // Получение геолокации пользователя
   const getUserLocation = async (): Promise<Point | null> => {
@@ -199,8 +249,8 @@ function App() {
     )
   }
 
-  // Если авторизация не удалась (и мы в Telegram), показываем ошибку
-  if (authError && isInTelegram) {
+  // Если авторизация не удалась (и не режим отладки), показываем ошибку
+  if (authError && !isDebugMode) {
     return (
       <div className="app" style={{
         display: 'flex',
@@ -219,8 +269,8 @@ function App() {
     )
   }
 
-  // Если не авторизован (и мы в Telegram), показываем ошибку
-  if (!isAuthenticated() && isInTelegram) {
+  // Если не авторизован (и не режим отладки), показываем ошибку
+  if (!isAuthenticated() && !isDebugMode) {
     return (
       <div className="app" style={{
         display: 'flex',
