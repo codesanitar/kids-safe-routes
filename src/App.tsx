@@ -8,28 +8,11 @@ import { authenticate, isAuthenticated } from './services/auth'
 import './App.css'
 
 function App() {
-  // Проверяем, запущено ли приложение в Telegram WebView
-  const checkIsTelegram = () => {
-    // Проверяем наличие объекта Telegram.WebApp (основной признак Telegram WebView)
-    const hasTelegramWebApp = typeof window !== 'undefined' && 
-                               window.Telegram?.WebApp !== undefined &&
-                               window.Telegram.WebApp !== null
-    
-    // Проверяем URL параметры Telegram (дополнительная проверка)
-    const hasTelegramParams = typeof window !== 'undefined' &&
-                              (window.location.search.includes('tgWebAppPlatform') ||
-                               window.location.search.includes('tgWebAppStartParam') ||
-                               window.location.search.includes('tgWebAppData'))
-    
-    // Проверяем User Agent (дополнительная проверка)
-    const hasTelegramUA = typeof navigator !== 'undefined' && 
-                          navigator.userAgent.includes('Telegram')
-    
-    return hasTelegramWebApp || hasTelegramParams || hasTelegramUA
-  }
-
-  // По умолчанию предполагаем, что мы в Telegram
-  const [isInTelegram, setIsInTelegram] = useState(true)
+  // Простая проверка согласно документации Telegram: window.Telegram && window.Telegram.WebApp
+  // Если компонент обернут в SDKProvider, window.Telegram.WebApp доступен сразу
+  const isInTelegram = typeof window !== 'undefined' && 
+                       window.Telegram && 
+                       window.Telegram.WebApp
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -42,32 +25,6 @@ function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Проверяем, запущено ли приложение в Telegram WebView
-    // Повторяем проверку несколько раз, так как Telegram.WebApp может загружаться асинхронно
-    const checkTelegram = () => {
-      const isTelegram = checkIsTelegram()
-      setIsInTelegram(isTelegram)
-    }
-    
-    // Проверяем сразу
-    checkTelegram()
-    
-    // Проверяем несколько раз с задержками, так как Telegram.WebApp может загружаться асинхронно
-    const timeout1 = setTimeout(checkTelegram, 50)
-    const timeout2 = setTimeout(checkTelegram, 200)
-    const timeout3 = setTimeout(checkTelegram, 500)
-    const timeout4 = setTimeout(checkTelegram, 1000)
-    const timeout5 = setTimeout(checkTelegram, 2000)
-    
-    return () => {
-      clearTimeout(timeout1)
-      clearTimeout(timeout2)
-      clearTimeout(timeout3)
-      clearTimeout(timeout4)
-      clearTimeout(timeout5)
-    }
-  }, [])
 
   // Авторизация при загрузке приложения
   useEffect(() => {
@@ -299,19 +256,6 @@ function App() {
           ⚠️ Приложение запущено вне Telegram
         </div>
       )}
-      <div style={{ 
-        position: 'absolute', 
-        top: !isInTelegram ? '40px' : '10px', 
-        left: '10px', 
-        background: 'rgba(0,0,0,0.7)', 
-        color: 'white', 
-        padding: '5px 10px', 
-        borderRadius: '4px',
-        fontSize: '11px',
-        zIndex: 10001
-      }}>
-        Карта: {mapReady ? '✅' : '⏳'} | Панель: ✅
-      </div>
       <MapComponent
         startPoint={startPoint}
         endPoint={endPoint}
