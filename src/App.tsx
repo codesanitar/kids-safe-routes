@@ -8,7 +8,6 @@ import { authenticate, isAuthenticated } from './services/auth'
 import './App.css'
 
 function App() {
-  const [isDebugMode, setIsDebugMode] = useState(false) // По умолчанию режим отладки выключен
   const [mapReady, setMapReady] = useState(false)
   const [startPoint, setStartPoint] = useState<Point | undefined>()
   const [endPoint, setEndPoint] = useState<Point | undefined>()
@@ -21,60 +20,34 @@ function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  // Проверяем наличие initData динамически
-  useEffect(() => {
-    const checkInitData = () => {
-      const hasInitData = typeof window !== 'undefined' && 
-                          window.Telegram?.WebApp?.initData !== undefined &&
-                          window.Telegram.WebApp.initData !== null &&
-                          window.Telegram.WebApp.initData !== ''
-      
-      setIsDebugMode(!hasInitData)
-    }
-
-    // Проверяем сразу
-    checkInitData()
-    
-    // Проверяем несколько раз с задержками, так как initData может загружаться асинхронно
-    const timeout1 = setTimeout(checkInitData, 100)
-    const timeout2 = setTimeout(checkInitData, 500)
-    const timeout3 = setTimeout(checkInitData, 1000)
-    
-    return () => {
-      clearTimeout(timeout1)
-      clearTimeout(timeout2)
-      clearTimeout(timeout3)
-    }
-  }, [])
-
-  // Авторизация при загрузке приложения (выполняется один раз)
+  // Авторизация при загрузке приложения
   useEffect(() => {
     let isMounted = true
 
     const performAuth = async () => {
-      // Проверяем наличие initData прямо здесь - это главный признак что мы в миниаппе
+      if (!isMounted) return
+
+      // Проверяем наличие initData
       const hasInitData = typeof window !== 'undefined' && 
                           window.Telegram?.WebApp?.initData !== undefined &&
                           window.Telegram.WebApp.initData !== null &&
                           window.Telegram.WebApp.initData !== ''
 
-      if (!isMounted) return
-
-      console.log('🚀 Начало авторизации:', {
+      console.log('🚀 Авторизация:', {
         hasInitData,
         windowTelegram: !!window.Telegram,
         webApp: !!window.Telegram?.WebApp,
         initData: !!window.Telegram?.WebApp?.initData,
-        apiBaseUrl: import.meta.env.VITE_API_BASE_URL ? 'установлен' : 'НЕ УСТАНОВЛЕН',
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'НЕ УСТАНОВЛЕН',
         authSecretKey: import.meta.env.VITE_AUTH_SECRET_KEY ? 'установлен' : 'НЕ УСТАНОВЛЕН'
       })
 
       setIsAuthenticating(true)
       setAuthError(null)
 
-      // Если нет initData - пропускаем авторизацию (режим отладки)
+      // Если нет initData - пропускаем авторизацию
       if (!hasInitData) {
-        console.log('⏭️ Пропуск авторизации: нет initData (режим отладки)')
+        console.log('⏭️ Нет initData, пропускаем авторизацию')
         if (isMounted) {
           setIsAuthenticating(false)
         }
@@ -84,7 +57,7 @@ function App() {
       // Получаем initData из window.Telegram.WebApp
       const initDataString = window.Telegram!.WebApp!.initData!
 
-      console.log('📋 InitData найден:', {
+      console.log('📋 InitData:', {
         length: initDataString.length,
         preview: initDataString.substring(0, 50) + '...'
       })
@@ -107,7 +80,7 @@ function App() {
     }
 
     // Небольшая задержка чтобы дать время initData загрузиться
-    const timeout = setTimeout(performAuth, 100)
+    const timeout = setTimeout(performAuth, 200)
 
     return () => {
       isMounted = false
@@ -249,8 +222,8 @@ function App() {
     )
   }
 
-  // Если авторизация не удалась (и не режим отладки), показываем ошибку
-  if (authError && !isDebugMode) {
+  // Если авторизация не удалась, показываем ошибку
+  if (authError) {
     return (
       <div className="app" style={{
         display: 'flex',
@@ -269,8 +242,8 @@ function App() {
     )
   }
 
-  // Если не авторизован (и не режим отладки), показываем ошибку
-  if (!isAuthenticated() && !isDebugMode) {
+  // Если не авторизован, показываем ошибку
+  if (!isAuthenticated()) {
     return (
       <div className="app" style={{
         display: 'flex',
@@ -290,38 +263,6 @@ function App() {
 
   return (
     <div className="app">
-      {isDebugMode && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          background: '#ff9800',
-          color: 'white',
-          padding: '8px',
-          textAlign: 'center',
-          fontSize: '12px',
-          zIndex: 10000,
-          fontWeight: 'bold'
-        }}>
-          🐛 РЕЖИМ ОТЛАДКИ (вне Telegram)
-        </div>
-      )}
-      {isDebugMode && (
-        <div style={{ 
-          position: 'absolute', 
-          top: '40px', 
-          left: '10px', 
-          background: 'rgba(0,0,0,0.7)', 
-          color: 'white', 
-          padding: '5px 10px', 
-          borderRadius: '4px',
-          fontSize: '11px',
-          zIndex: 10001
-        }}>
-          Карта: {mapReady ? '✅' : '⏳'} | Панель: ✅
-        </div>
-      )}
       <MapComponent
         startPoint={startPoint}
         endPoint={endPoint}
